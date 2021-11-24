@@ -32,7 +32,17 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="H_root.hpp" />
+		<Unit filename="LB2d.layout" />
+		<Unit filename="global.hpp" />
+		<Unit filename="lattice.hpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="opengl.hpp" />
+		<Unit filename="property_array.hpp" />
+		<Unit filename="shader.hpp" />
+		<Unit filename="simulation.hpp" />
+		<Unit filename="velocity_set.hpp" />
+		<Unit filename="visualization.hpp" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>

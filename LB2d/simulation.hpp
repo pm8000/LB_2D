@@ -101,18 +101,72 @@ public: // ctor
 		// * fill in your code here *
 		// **************************
 
+		//EDITED
+
+		//advect populations towards top and right
+		for (int j=0; j<static_cast<int>(l.ny); ++j)
+		{
+			for (int i=0; i<static_cast<int>(l.nx); ++i)
+			{
+                for (unsigned int k=1; k<shift.size(); ++k)
+                {
+                    if (k<3 || k==5 || k==6)
+                    {
+                        continue;
+                    }
+                    l.get_node(l.index(i,j)+shift[k]).f(k)=l.get_node(i,j).f(k);
+                }
+			}
+		}
+		//advect populations towards bottom and left
+		for (int j=static_cast<int>(l.ny)-1; j>-1; --j)
+		{
+			for (int i=static_cast<int>(l.nx); i>-1; --i)
+			{
+                for (unsigned int k=1; k<shift.size(); ++k)
+                {
+                    if (k==3 || k==4 || k<=7)
+                    {
+                        continue;
+                    }
+                    l.get_node(l.index(i,j)+shift[k]).f(k)=l.get_node(i,j).f(k);
+                }
+			}
+		}
 	}
 
 	/**  @brief apply wall boundary conditions */
 	void wall_bc()
 	{
 		#pragma omp parallel for
-		for (unsigned int i=0; i<l.wall_nodes.size(); ++i)
-		{
 			// **************************
 			// * fill in your code here *
 			// **************************
-		}
+			//EDITED
+			//bottom and top walls
+			for (int i=0; i<static_cast<int>(l.nx);++i)
+            {
+
+                l.get_node(i,0).f(2)=l.get_node(i,-1).f(4);
+                l.get_node(i,static_cast<int>(l.ny)).f(4)=l.get_node(i, static_cast<int>(l.ny)+1).f(2);
+                //corners
+                if(i==0)
+                {
+                    l.get_node(0,0).f(5)=l.get_node(-1,-1).f(7);
+                    l.get_node(0,static_cast<int>(l.ny)).f(6)=l.get_node(-1, static_cast<int>(l.ny)+1).f(8);
+                }
+                if(i==static_cast<int>(l.nx))
+                {
+                    l.get_node(i,0).f(6)=l.get_node(i+1,-1).f(8);
+                    l.get_node(i,static_cast<int>(l.ny)).f(7)=l.get_node(i+1, static_cast<int>(l.ny)+1).f(5);
+                }
+            }
+            //left and right walls
+            for(int j=0; j<static_cast<int>(l.ny);++j)
+            {
+                l.get_node(0,j).f(1)=l.get_node(-1,j).f(3);
+                l.get_node(static_cast<int>(l.nx),j).f(3)=l.get_node(static_cast<int>(l.nx)+1, j).f(1);
+            }
 	}
 
 	/** @brief collide the populations */
@@ -121,7 +175,33 @@ public: // ctor
 		// **************************
 		// * fill in your code here *
 		// **************************
+		//EDITED
+		for (int j=0; j<static_cast<int>(l.ny); ++j)
+		{
+			for (int i=0; i<static_cast<int>(l.nx); ++i)
+			{
+			    double rho_cur=0;
+			    double u_cur=0;
+			    double v_cur=0;
+                for (unsigned long int k=0; k<shift.size(); ++k)
+                {
+                    rho_cur+=l.get_node(i,j).f(k);
+                    u_cur+=l.get_node(i,j).f(k)*velocity_set().c[0][k];
+                    v_cur+=l.get_node(i,j).f(k)*velocity_set().c[1][k];
+                }
+                l.get_node(i,j).rho()=rho_cur;
+                l.get_node(i,j).u()=u_cur;
+                l.get_node(i,j).v()=v_cur;
+                for (unsigned long int k=0; k<shift.size(); ++k)
+                {
+                    double f_eq=rho_cur*velocity_set().W[k]*(2.0-std::sqrt(1.0+3.0*u_cur*u_cur))*(2.0-std::sqrt(1.0+3.0*v_cur*v_cur))
+                    *std::pow((2.0*u_cur+std::sqrt(1.0+3.0*u_cur*u_cur))/(1-u_cur), velocity_set().c[0][k])
+                    *std::pow((2.0*v_cur+std::sqrt(1.0+3.0*v_cur*v_cur))/(1-v_cur), velocity_set().c[1][k]);
+                    l.get_node(i,j).f(k)+=2*beta*(f_eq-l.get_node(i,j).f(k));
+                }
 
+			}
+		}
 	}
 
 	/** @brief LB step */
