@@ -37,7 +37,7 @@ public: // ctor
 	  shift(velocity_set().size),
 	  Re(_Re),
 	  Vmax(_Vmax),
-	  visc( /*fill in your code here*/ 0.001),
+	  visc( /*fill in your code here*/ 0.01),
 	  beta( 1/(2*visc/(this->cs*this->cs)+1)), //EDITED
 	  time(0),
 	  file_output(false), // set to true if you want to write files
@@ -86,6 +86,7 @@ public: // ctor
 				l.get_node(i,j).u()   = -Vmax*std::sqrt(K_y/K_x)*std::sin(K_y*j)*std::cos(K_x*i);
 				l.get_node(i,j).v()   = Vmax*std::sqrt(K_x/K_y)*std::sin(K_x*i)*std::cos(K_y*j);
 				l.get_node(i,j).rho() = 1.0 - Vmax*Vmax/(2*cs*cs*std::sqrt(K_x*K_x+K_y*K_y))*(K_y*K_y*std::cos(3*K_x*i) + K_x*K_x*std::cos(2*K_y*j));
+				velocity_set().equilibrate(l.get_node(i,j));
 			}
 		}
 	}
@@ -103,7 +104,8 @@ public: // ctor
 
 		//EDITED
 
-		//advect populations towards top and right
+		//advect populations towards top and rights
+
 		for (int j=0; j<static_cast<int>(l.ny); ++j)
 		{
 			for (int i=0; i<static_cast<int>(l.nx); ++i)
@@ -146,26 +148,25 @@ public: // ctor
 			//bottom and top walls
 			for (int i=0; i<static_cast<int>(l.nx);++i)
             {
-
                 l.get_node(i,0).f(2)=l.get_node(i,-1).f(4);
-                l.get_node(i,static_cast<int>(l.ny)).f(4)=l.get_node(i, static_cast<int>(l.ny)+1).f(2);
+                l.get_node(i,static_cast<int>(l.ny)).f(4)=l.get_node(i, static_cast<int>(l.ny)).f(2);
                 //corners
                 if(i==0)
                 {
                     l.get_node(0,0).f(5)=l.get_node(-1,-1).f(7);
-                    l.get_node(0,static_cast<int>(l.ny)).f(6)=l.get_node(-1, static_cast<int>(l.ny)+1).f(8);
+                    l.get_node(0,static_cast<int>(l.ny)-1).f(6)=l.get_node(-1, static_cast<int>(l.ny)).f(8);
                 }
-                if(i==static_cast<int>(l.nx))
+                if(i==static_cast<int>(l.nx)-1)
                 {
                     l.get_node(i,0).f(6)=l.get_node(i+1,-1).f(8);
-                    l.get_node(i,static_cast<int>(l.ny)).f(7)=l.get_node(i+1, static_cast<int>(l.ny)+1).f(5);
+                    l.get_node(i,static_cast<int>(l.ny)-1).f(7)=l.get_node(i+1, static_cast<int>(l.ny)).f(5);
                 }
             }
             //left and right walls
             for(int j=0; j<static_cast<int>(l.ny);++j)
             {
                 l.get_node(0,j).f(1)=l.get_node(-1,j).f(3);
-                l.get_node(static_cast<int>(l.nx),j).f(3)=l.get_node(static_cast<int>(l.nx)+1, j).f(1);
+                l.get_node(static_cast<int>(l.nx)-1,j).f(3)=l.get_node(static_cast<int>(l.nx), j).f(1);
             }
 	}
 
@@ -192,12 +193,11 @@ public: // ctor
                 l.get_node(i,j).rho()=rho_cur;
                 l.get_node(i,j).u()=u_cur;
                 l.get_node(i,j).v()=v_cur;
+                float_type f[9];
+                velocity_set().f_eq(f, rho_cur, u_cur, v_cur);
                 for (unsigned long int k=0; k<shift.size(); ++k)
                 {
-                    double f_eq=rho_cur*velocity_set().W[k]*(2.0-std::sqrt(1.0+3.0*u_cur*u_cur))*(2.0-std::sqrt(1.0+3.0*v_cur*v_cur))
-                    *std::pow((2.0*u_cur+std::sqrt(1.0+3.0*u_cur*u_cur))/(1-u_cur), velocity_set().c[0][k])
-                    *std::pow((2.0*v_cur+std::sqrt(1.0+3.0*v_cur*v_cur))/(1-v_cur), velocity_set().c[1][k]);
-                    l.get_node(i,j).f(k)+=2*beta*(f_eq-l.get_node(i,j).f(k));
+                    l.get_node(i,j).f(k)+=2*beta*(f[k]-l.get_node(i,j).f(k));
                 }
 
 			}
@@ -207,7 +207,7 @@ public: // ctor
 	/** @brief LB step */
 	void step()
 	{
-		advect();
+        advect();
 		wall_bc();
 		collide();
 
