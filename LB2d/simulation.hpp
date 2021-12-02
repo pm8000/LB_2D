@@ -37,7 +37,7 @@ public: // ctor
 	  shift(velocity_set().size),
 	  Re(_Re),
 	  Vmax(_Vmax),
-	  visc( /*fill in your code here*/ 0.001),
+	  visc(Vmax*nx/Re),
 	  beta(1/(2*visc/(velocity_set().cs*velocity_set().cs)+1)), //EDITED
 	  time(0),
 	  file_output(false), // set to true if you want to write files
@@ -179,10 +179,13 @@ public: // ctor
 		// * fill in your code here *
 		// **************************
 		//EDITED
+		double mass_before=0;
+		double mass_after=0;
 		for (int j=0; j<static_cast<int>(l.ny); ++j)
 		{
 			for (int i=0; i<static_cast<int>(l.nx); ++i)
 			{
+			    mass_before+=l.get_node(i,j).rho();
 			    double rho_cur=0;
 			    double u_cur=0;
 			    double v_cur=0;
@@ -195,15 +198,31 @@ public: // ctor
                 l.get_node(i,j).rho()=rho_cur;
                 l.get_node(i,j).u()=u_cur;
                 l.get_node(i,j).v()=v_cur;
+                mass_after+=rho_cur;
+                if (i==7 && j==25)
+                {
+                    //std::cout<<"rho "<<l.get_node(i,j).rho()<<" u "<<l.get_node(i,j).u()<<" v "<<l.get_node(i,j).v()<<" velocity "<<std::sqrt(u_cur*u_cur+v_cur*v_cur)<<std::endl;
+                }
                 float_type f[9];
                 velocity_set().f_eq(f, rho_cur, u_cur, v_cur);
+                double k_sum=0.0;
                 for (unsigned long int k=0; k<shift.size(); ++k)
                 {
-                    l.get_node(i,j).f(k) += 2*beta*(f[k]-l.get_node(i,j).f(k));
+                    if(i==7 && j==25)
+                    {
+                        //std::cout<<"f_eq["<<k<<"] "<<f[k]<<" f["<<k<<"] "<<l.get_node(i,j).f(k)<<std::endl;
+                    }
+                    l.get_node(i,j).f(k) = l.get_node(i,j).f(k)+2*beta*(f[k]-l.get_node(i,j).f(k));
+                    k_sum+=f[k];
+                }
+                if (std::abs(k_sum-rho_cur)>= 1e-3 && std::abs(rho_cur) <=1e10)
+                {
+                    std::cout<<"("<<i<<","<<j<<")"<<" mass not conserved"<<std::endl;
                 }
 
 			}
 		}
+		std::cout<<"total mass before"<<mass_before<<" after "<<mass_after<<std::endl;
 	}
 
 	/** @brief LB step */

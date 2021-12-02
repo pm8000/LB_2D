@@ -10,7 +10,7 @@
 int main(int argc, char *argv[])
 {
 	omp_set_num_threads(std::max(omp_get_max_threads(),omp_get_num_procs()));
-	lb::simulation* sim = new lb::simulation(128, 128, 10000,0.05);
+	lb::simulation* sim = new lb::simulation(50, 50, 1000,0.05);
 	sim->initialize();
 	std::cout << *sim << std::endl;
 
@@ -43,9 +43,11 @@ int main(int argc, char *argv[])
         */
 
 		//new
-		for (int i=0;i<30;++i)
+        for (int i=0;i<10;++i)
         {
-            std::cout<<*max_element(sim->l.u.begin(),sim->l.u.end())<<std::endl;
+            //std::vector<float>::iterator m=max_element(sim->l.u.begin(),sim->l.u.end());
+            //std::cout<<"maximum"<<*m<<" location "<<m-sim->l.u.begin()<<std::endl;
+            std::cout<<"step"<<i<<std::endl;
             sim->step();
         }
 
